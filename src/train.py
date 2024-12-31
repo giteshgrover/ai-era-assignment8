@@ -77,7 +77,7 @@ def train_and_test_model():
     # validation_dataset = Subset(datasets.MNIST('./data', train=True, download=True, transform=test_transform), validation_indices)
 
     # dataloader arguments - something you'll fetch these from cmdprmt
-    dataloader_args = dict(shuffle=True, batch_size=128, num_workers=4, pin_memory=True) if (device.type == 'cuda' or device.type == 'mps') else dict(shuffle=True, batch_size=64)
+    dataloader_args = dict(shuffle=True, batch_size=128, num_workers=10, pin_memory=True) if (device.type == 'cuda' or device.type == 'mps') else dict(shuffle=True, batch_size=64)
     print(f"[INFO] Dataloader arguments: {dataloader_args}")
     train_loader = torch.utils.data.DataLoader(train_dataset, **dataloader_args)
     test_loader = torch.utils.data.DataLoader(test_dataset, **dataloader_args)
@@ -101,7 +101,7 @@ def train_and_test_model():
     optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
     
     # Calculate total steps for OneCycleLR
-    epochs = 2
+    epochs = 30
     steps_per_epoch = len(train_loader)
     total_steps = epochs * steps_per_epoch
     

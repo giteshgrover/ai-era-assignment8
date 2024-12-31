@@ -43,7 +43,7 @@ class BasicBlock(nn.Module):
 # Final average pooling is 4x4 instead of 7x7
 # The model will accept 32x32x3 images (CIFAR10 format) and output 10 classes.
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -51,21 +51,21 @@ class ResNet(nn.Module):
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
          
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)  # Layer 1 - input 64 x 32 x 32, output: 64 x 32 x 32
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2) # Layer 2 - input 64 x 32 x 32, output: 128 x 16 x 16
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2) # Layer 3 - input 128 x 16 x 16, output: 256 x 8 x 8
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2) # Layer 4 - input 256 x 8 x 8, output: 512 x 4 x 4
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        self.layer1 = self._make_layer(block, 64, [1, 1, 2])  # Layer 1 - input 64 x 32 x 32, output: 64 x 32 x 32
+        self.layer2 = self._make_layer(block, 64, [1, 1, 2]) # Layer 2 - input 64 x 32 x 32, output: 128 x 16 x 16
+        self.layer3 = self._make_layer(block, 64, [1, 1, 2]) # Layer 3 - input 128 x 16 x 16, output: 256 x 8 x 8
+        self.layer4 = self._make_layer(block, 64, [1, 1, 1]) # Layer 4 - input 256 x 8 x 8, output: 512 x 4 x 4
+        self.linear = nn.Linear(64*block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, num_blocks, stride):
+    def _make_layer(self, block, planes, block_strides):
         # A Layer made of multiple blocks where the first CN in block will have stride of the 'stride' value passed in 
         # The 2nd CN in 1st block will have stride of 1. Also, all the following up blocks will have stride of '1'
         # strides = [stride, 1, 1, ...]
-        strides = [stride] + [1]*(num_blocks-1)
+        # strides = [1]*(num_blocks-1) + [2]
         layers = []
         # print(f"MakeLayer passed in stride value {stride}")
         # print(f"strides {strides}")
-        for stride in strides:
+        for stride in block_strides:
             layers.append(block(self.in_planes, planes, stride))
             self.in_planes = planes * block.expansion # Change the input for next layer to the output of current layer
         # print(f"layers {layers}")
@@ -88,4 +88,4 @@ class ResNet(nn.Module):
 
 # A ResNet18() function that returns a ResNet-18 model configured for CIFAR10 (10 classes)
 def ResNet18():
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+    return ResNet(BasicBlock)
