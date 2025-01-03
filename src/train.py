@@ -101,7 +101,7 @@ def train_and_test_model():
     optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
     
     # Calculate total steps for OneCycleLR
-    epochs = 30
+    epochs = 60
     steps_per_epoch = len(train_loader)
     total_steps = epochs * steps_per_epoch
     

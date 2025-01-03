@@ -11,7 +11,14 @@ class BasicBlock(nn.Module):
 
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        #  Replaced the single conv1 layer with two layers:
+        ## conv1_depthwise: A depthwise convolution where groups=in_planes means each input channel is convolved separately
+        ## conv1_pointwise: A 1x1 convolution that mixes the channels
+        # Modified the forward pass to use these two convolution operations in sequence
+        self.conv1_depthwise = nn.Conv2d(in_planes, in_planes, kernel_size=3, 
+                                        stride=stride, padding=1, groups=in_planes, bias=False)
+        self.conv1_pointwise = nn.Conv2d(in_planes, planes, kernel_size=1, 
+                                        stride=1, padding=0, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -24,9 +31,11 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.conv1_depthwise(x)
+        out = self.conv1_pointwise(out)
+        out = F.relu(self.bn1(out))
         out = self.bn2(self.conv2(out))
-        out += self.shortcut(x) # Note - addition and not append
+        out += self.shortcut(x)
         out = F.relu(out)
         return out
 
@@ -45,17 +54,17 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block, num_classes=10):
         super(ResNet, self).__init__()
-        self.in_planes = 64
+        self.in_planes = 32
 
         # Input: 3 x 32 x 32, Output: 64 x 32 x 32
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(32)
          
-        self.layer1 = self._make_layer(block, 64, [1, 1, 2])  # Layer 1 - input 64 x 32 x 32, output: 64 x 32 x 32
-        self.layer2 = self._make_layer(block, 64, [1, 1, 2]) # Layer 2 - input 64 x 32 x 32, output: 128 x 16 x 16
-        self.layer3 = self._make_layer(block, 64, [1, 1, 2]) # Layer 3 - input 128 x 16 x 16, output: 256 x 8 x 8
-        self.layer4 = self._make_layer(block, 64, [1, 1, 1]) # Layer 4 - input 256 x 8 x 8, output: 512 x 4 x 4
-        self.linear = nn.Linear(64*block.expansion, num_classes)
+        self.layer1 = self._make_layer(block, 32, [1, 1, 2])  # Layer 1 - input 64 x 32 x 32, output: 64 x 32 x 32
+        self.layer2 = self._make_layer(block, 32, [1, 1, 2]) # Layer 2 - input 64 x 32 x 32, output: 128 x 16 x 16
+        self.layer3 = self._make_layer(block, 32, [1, 1, 2]) # Layer 3 - input 128 x 16 x 16, output: 256 x 8 x 8
+        self.layer4 = self._make_layer(block, 32, [1, 1, 1]) # Layer 4 - input 256 x 8 x 8, output: 512 x 4 x 4
+        self.linear = nn.Linear(32*block.expansion, num_classes)
 
     def _make_layer(self, block, planes, block_strides):
         # A Layer made of multiple blocks where the first CN in block will have stride of the 'stride' value passed in 
